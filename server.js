@@ -116,46 +116,46 @@ app.post("/newMsg", function(req,res){
 });
 //Start of Changes
 
-// app.post("/vote/:msgId",   (req,res) => {
-//     const vote = req.body.inc;
-//     const newVote = req.body;
+//  app.post("/vote/:msgId",   (req,res) => {
+//      const vote = req.body.inc;
+//      const newVote = req.body;
 
-//     console.log("vote amount: " , vote);
+//      console.log("vote amount: " , vote);
 
-//     console.log("msg id", req.params.msgId)
+//      console.log("msg id", req.params.msgId)
 
-//     Message.findOneAndUpdate(
-//         { msg_id: req.params.msgId },
-//         {
-//             vote: vote,
-//         },
+//      Message.findOneAndUpdate(
+//          { msg_id: req.params.msgId },
+//          {
+//              vote: vote,
+//          },
         
-//     )
-//     .exec()
+//      )
+//      .exec()
 
-// });
+//  });
 
-// app.delete('/messages/:msgId', (req, res) => {
-//     const msgId = req.params.msgId;
+//  app.delete('/messages/:msgId', (req, res) => {
+//      const msgId = req.params.msgId;
 
-//     Message.find({msg_id: req.params.msgId})
-//             .deleteOne()
-//             .exec()
+//      Message.find({msg_id: req.params.msgId})
+//              .deleteOne()
+//              .exec()
  
-//     res.send('Message is deleted');
-// });
+//      res.send('Message is deleted');
+//  });
 
-// app.post('/:msgId/messages', (req, res) => {
-//     const msgId = req.params.msgId;
+//  app.post('/:msgId/messages', (req, res) => {
+//      const msgId = req.params.msgId;
 
-//     Message.findOneAndUpdate({msg_id: req.params.msgId})
-//         .updateOne()
-//         .exec()
+//      Message.findOneAndUpdate({msg_id: req.params.msgId})
+//          .updateOne()
+//          .exec()
 
-//     res.sendStatus(200);
+//      res.sendStatus(200);
 
-//     res.send("Message is updated");
-// })
+//      res.send("Message is updated");
+//  })
 
 //Prev
 app.post("/api/change-password", async(req, res) => {
@@ -253,8 +253,9 @@ app.post("/api/editMessage", async (req, res) => {
     console.log("updating");
     await Message.findOneAndUpdate({msg_id: message}, {text_msg: newText});
     if(req.body.room_id){
-        console.log("rmId ", req.body.room_id)
-        rmId = '/' + req.body.room_id;
+        // console.log("rmId ", req.body.room_id)
+        rmId = '/' + req.body.room_id; 
+        console.log("rmId:", rmId)
     }
     res.redirect(rmId);
 })
