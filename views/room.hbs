@@ -20,14 +20,21 @@
     </ul>
 </div>
 <section>
+    <a id="current-user"></a>
     <h1> {{title}}: {{roomName}}</h1>
-
+    <div class="search_block">
+        <i class="fa-solid fa-magnifying-glass"><input id="search_bar" type="search" name="search" onkeyup="handleSearch()"placeholder="Search messages..."></i>
+        
+    </div>
     <div id='display-msg'>
         {{#each messages}}
             <div class="post-box">
                 <h5>{{this.username}}</h5>
                 <h6> {{this.date}}</h6>
                 <p>{{this.text_msg}}</p>
+                <button onClick="upVote(`{{this.msg_id}}`, {{this.vote}})">Up</button>
+                {{this.vote}}
+                <button onClick="downVote(`{{this.msg_id}}`, {{this.vote}})"> Down</button>
             </div>
             <div class="up_block">
                 <button class="up_btn">Up</button>
@@ -43,8 +50,8 @@
 
     <form class="add-post" action="/newMsg" method="POST" autocomplete="off">
     <div class="reply-item">
-        <label for="name">Username</label>
-        <input type="text" name="username" placeholder="Please enter a username"/>
+        <label style="display:none" for="name">Username</label>
+        <input style="display:none" type="text" name="username" placeholder="Please enter a username"/>
     </div>
     <div class="reply-item">
         <label for="name">Message</label>
@@ -56,59 +63,80 @@
 </section>
 
 <script>
-    let rm_id = '{{roomId}}';
-    let msgUrl = "http://localhost:3000//messages";
-    let fetchUrl = msgUrl.substring(0, 22)  + rm_id + msgUrl.substring(22, msgUrl.length);
-    {{!-- console.log(fetchUrl); --}}
+    let voted1 = true;
+    let msgs = [];
+
+    let searchString = "" // here we use a global variable
+    const handleSearch = function() {
+        searchString = document.getElementById('search_bar').value.trim().toLowerCase()
+        console.log(searchString);
+    }
+
     window.addEventListener('load', function(){
-        setTimeout(async function(){
+        let rm_id = "{{roomId}}";
+        let msgUrl = "http://localhost:3000//messages";
+        let username = 'username';
+        let fetchUrl = msgUrl.substring(0, 22)  + rm_id + msgUrl.substring(22, msgUrl.length);
+        console.log(fetchUrl);
+
+        setInterval(async function(){
+            const curr = document.getElementById('current-user');
+            const usernameBox = document.getElementsByName('username')[0];
+            if (curr.innerHTML !== "") {usernameBox.value = curr.innerHTML;}
             fetch(fetchUrl)
             .then(response => response.json())
             .then(data =>{
                 var msgJson = data;
-                //console.log(msgJson);
-
                 var div_element = document.getElementById('display-msg');
                 div_element.innerHTML = ""
+                if (searchString.length > 0){
+                    msgJson = msgJson.filter((jsonObject) =>
+                    jsonObject.text_msg.toLowerCase().includes(searchString) 
+                    || jsonObject.username.toLowerCase().includes(searchString));
+                }
 
                 for(var j =0;j<msgJson.length;j++){
                     var postBox = document.createElement('div');
                     postBox.classList.add("post-box");
                     var user = document.createElement('h5');
                     user.innerText = msgJson[j].username;
+                    //console.log(msgJson[j].username);
                     var date = document.createElement('h6');
                     date.innerText = msgJson[j].date;
+                    //console.log(msgJson[j].date);
                     var content = document.createElement('p');
                     content.innerText = msgJson[j].text_msg;
-                    
-                    var upBox = document.createElement('div');
-                    upBox.classList.add("up_block");
-                    var upB = document.createElement('button');
-                    upB.classList.add("up_btn")
-                    upB.innerText = "Up"
-                    var spanMsg = document.createElement('span');
-                    spanMsg.classList.add("id_msg");
-                    spanMsg.innerText = msgJson[j].msg_id;
-                    upBox.appendChild(upB);
-                    upBox.appendChild(spanMsg);
-
-                    var voteBox = document.createElement('p1');
-                    voteBox.classList.add("vote_cnt");
-                    voteBox.innerText = msgJson[j].vote;
-                    var downBox = document.createElement('div');
-                    downBox.classList.add("down_block");
-                    var downB = document.createElement('button');
-                    downB.classList.add("down_btn")
-                    downB.innerText = "Down"
-                    var spanMsg = document.createElement('span');
-                    spanMsg.classList.add("id_msg");
-                    spanMsg.innerText = msgJson[j].msg_id;
-                    downBox.appendChild(spanMsg);
-                    downBox.appendChild(downB);
-                    
+                    console.log(msgJson[j].text_msg);
+                    var vote = document.createElement('p1');
+                    vote.innerText = msgJson[j].vote;
+                    var upV = document.createElement("button");
+                    upV.addEventListener("click", () => { upVote(msgJson[j].msg_id, msgJson[j].vote) });
+                    upV.innerText = "Up"
+                    console.log(msgJson[j].vote);
+                    var downV = document.createElement("button");
+                    downV.innerText = " Down";
+                    downV.addEventListener("click", () => { downVote(msgJson[j].msg_id, msgJson[j].vote); }); 
+                    var del = document.createElement("button");
+                    var edit = document.createElement("button");
+                    var editBtn = document.createElement('button');
+                    const link = "/" + rm_id + "/" + msgJson[j].msg_id
+                    editBtn.innerHTML = "<a href="+ link + ">Edit</a>"
                     postBox.appendChild(user);
                     postBox.appendChild(date);
                     postBox.appendChild(content);
+                    postBox.appendChild(upV);
+                    postBox.appendChild(vote);
+                    postBox.appendChild(downV);
+                    if (curr.innerHTML == msgJson[j].username){
+                        var editBtn = document.createElement('button');
+                        const link = "/" + rm_id + "/" + msgJson[j].msg_id
+                        editBtn.innerHTML = "<a href="+ link + ">Edit</a>"
+                        var del = document.createElement("button");
+                        del.addEventListener("click", () => { deleteMsg(msgJson[j].msg_id) });
+                        del.innerText = "Delete"
+                        postBox.appendChild(editBtn);
+                        postBox.appendChild(del);
+                    }
                     div_element.appendChild(postBox);
                     div_element.appendChild(upBox);
                     div_element.appendChild(voteBox);
@@ -174,59 +202,86 @@
                 console.log("Error when rendering rooms", err);
             });
         }, 1000);
-    }) 
-
-    let upBlock = document.getElementsByClassName("up_block");
-    let downBlock = document.getElementsByClassName("down_block");
+    })
+   async function upVote(msgSelected, currVal){
+       // checks if pressed
+        for (let i = 0; i < msgs.length; i++) {
+            if (msgSelected == msgs[i]) {
+                voted1 = false;
+                return;
+            }
+        }
+        msgs.push(msgSelected);
+        const inc = {"inc": currVal+1}
+        console.log("msgSelected: ", msgSelected);
+        console.log("upVal: ", inc);
+        console.log("upVote clicked");
+        const url = "http://localhost:3000/vote/" + msgSelected;
+        const requestOptions = {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(inc)
+        }
+        const response  =  await fetch(url, requestOptions)
+        const result = await response.json();
+    }
     
-    function upVote(msgSelected){
+    async function downVote(msgSelected, currVal){
+        for (let i = 0; i < msgs.length; i++) {
+            if (msgSelected == msgs[i]) {
+                voted1 = false;
+                return;
+            }
+        }
+        msgs.push(msgSelected);
+        const dec = {"inc": currVal-1}
         console.log("msgSelected: ", msgSelected);
-        let currVal = 0;
-        let incVal = 0;
-        fetch(fetchUrl)
-            .then(response => response.json())
-            .then(data =>{
-                var msgJson = data;
-                {{!-- console.log(msgJson) --}}
-                for(var j =0;j<msgJson.length;j++){
-                    if(msgJson[j].msg_id == msgSelected){
-                        currVal = msgJson[j].vote;
-                        console.log("currVal: ", currVal)
-                    }
-                }
-                incVal = currVal+1;
-                console.log("incVal: ", incVal);
-                {{!-- const result = fetch("/vote", {
-                            method: "POST",
-                            body: JSON.stringify({
-                                msgSelected, incVal
-                            })
-                }).then((res) => res.json()) --}}
-            })
-    }
-
-    function downVote(msgSelected){
+        console.log("downVal: ", dec);
         console.log("downVote clicked");
-        console.log("msgSelected: ", msgSelected);
-        {{!-- const result = fetch("/vote", {
-                    method: "POST",
-                    body: JSON.stringify({
-                        msgSelected, decVal
-                    })
-        }).then((res) => res.json()) --}}
+        const url = "http://localhost:3000/vote/"+msgSelected;
+        const requestOptions = {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(dec)
+        }
+        const response  =  await fetch(url, requestOptions)
+        const result = await response.json();
     }
 
-    Array.from(upBlock).forEach(function(upBlock) {
-        upBlock.addEventListener('click', function(){
-            const msgTemp = upBlock.getElementsByClassName("id_msg")
-            upVote(msgTemp[0].innerText)
-        })
-    });
+    async function deleteMsg(msgSelected) {
+        const url = "http://localhost:3000/messages/"+msgSelected;
 
-    Array.from(downBlock).forEach(function(downBlock) {
-        downBlock.addEventListener('click', function(){
-            const msgTemp = downBlock.getElementsByClassName("id_msg")
-            downVote(msgTemp[0].innerText)
-        })
-    });
+        let resp = await fetch(url, {method: "DELETE"});
+            console.log(resp.status); 
+            console.log(resp.statusText);
+            location.reload(true);
+
+    }
+
+    const editMsg = async () => {
+        let response = await fetch(`http://localhost:3000/LGUMDA/messages`, {method: "GET"});
+
+        console.log(response.status);
+        console.log(response.statusText);
+
+        if (response.status === 200) {
+            let data = await response.text();
+            console.log("DATA:",data);
+            const editMsg = JSON.parse(data);
+
+            const {
+                text_msg,
+                date,
+                vote
+            } = editMsg;
+
+            document.getElementById('text_msg').value = text_msg;
+            document.getElementById('date').value = moment().format("LLLL");
+            document.getElementById('vote').value = vote;
+        }
+    }
 </script>
